@@ -6,67 +6,67 @@ This page describes how to annotate mobile element insertions (MEIs) from VCF fi
 
 ## Installation
 
-Install RepeatMasker using conda via https://anaconda.org/channels/bioconda/packages/repeatmasker/overview 
+Install RepeatMasker, BCFtools, and Samtools.
 
 ## Pre-processing of the vcf file
 
 ```bash
 ## install hprc-v2.0-mc-chm13.wave.vcf.gz using https://filesender.renater.fr/?s=download&token=4740558f-6740-476a-8b85-981f56825cdc
-bcftools index -t hprc-v2.0-mc-chm13.wave.vcf.gz
-# var count = 44 559 977
+# TE var count = 44 559 977
 
-## split the multiallelic records
+## split multiallelic records
 bcftools norm -m -any hprc-v2.0-mc-chm13.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm.wave.vcf.gz
-bcftools index -t hprc-v2.0-mc-chm13_norm.wave.vcf.gz
+bcftools annotate --set-id '%ID\_%ALT' hprc-v2.0-mc-chm13_norm.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm_indx.wave.vcf.gz
 
 ## keep allele with REF or ALT > 100 and < 10 000
-bcftools view -i '(MAX(STRLEN(ALT))>=100 && MAX(STRLEN(ALT))<=10000) | (STRLEN(REF)>=100 && STRLEN(REF)<=10000)' hprc-v2.0-mc-chm13_norm.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm_mod_len.wave.vcf.gz
-bcftools index -t hprc-v2.0-mc-chm13_norm_mod_len.wave.vcf.gz
-# var count = 1 275 518
+bcftools view -i '(MAX(STRLEN(ALT))>=100 && MAX(STRLEN(ALT))<=10000) | (STRLEN(REF)>=100 && STRLEN(REF)<=10000)' hprc-v2.0-mc-chm13_norm_indx.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf.gz
+gunzip hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf.gz
+# TE var count = 1 275 518
 
 ## create a fasta file for RepeatMasker from vcf
-sed -e 's/chr//' hprc-v2.0-mc-chm13_norm_mod_len.wave.vcf | awk '!/^#/ {
+sed -e 's/chr//' hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf | awk '!/^#/ {
     chrom = $1
     pos   = $2
     id    = $3
     ref   = $4
     alt   = $5
-    gsub(/>/, "ARROW", id)
     match(id, /[0-9]+/)
     short_id = substr(id, RSTART, RLENGTH)
     if (length(ref) >= 100) {
+        count_ref[chrom"_"pos]++
+        n = count_ref[chrom"_"pos]
         short_header = "chr" chrom "_" pos "_" short_id "_REF"
         full_header  = "chr" chrom "_" pos "_" id "_REF"
-        count_ref[short_header]++
-        if (count_ref[short_header] > 1) {
-            short_header = short_header "_" count_ref[short_header]
-            full_header  = full_header  "_" count_ref[short_header]
+        if (n == 1) {
+            print full_header "\t" short_header >> "id_mapping.bed"
+            print ">" short_header
+            print ref
         }
-        print full_header "\t" short_header >> "id_mapping.bed"
-        print ">" short_header
-        print ref
     }
     if (length(alt) >= 100) {
-        short_header = "chr" chrom "_" pos "_" short_id "_ALT"
-        full_header  = "chr" chrom "_" pos "_" id "_ALT"
-        count_alt[short_header]++
-        if (count_alt[short_header] > 1) {
-            short_header = short_header "_" count_alt[short_header]
-            full_header  = full_header  "_" count_alt[short_header]
-        }
+        count_alt[chrom"_"pos]++
+        n = count_alt[chrom"_"pos]
+        short_header = "chr" chrom "_" pos "_" short_id "_ALT" n
+        full_header  = "chr" chrom "_" pos "_" id "_ALT" n
         print full_header "\t" short_header >> "id_mapping.bed"
         print ">" short_header
         print alt
     }
-}' > vcf2fasta_chm13_norm_mod_len.fasta
-samtools faidx vcf2fasta_chm13_norm_mod_len.fasta
+}' > vcf2fasta_chm13_norm_indx_mod_len.fasta
+samtools faidx vcf2fasta_chm13_norm_indx_mod_len.fasta
 
-## split by chromosome
+## split by chr
+
 for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY; do
-    grep "^>${chr}_" vcf2fasta_chm13_norm_mod_len.fasta | sed 's/^>//' | \
-        xargs samtools faidx vcf2fasta_chm13_norm_mod_len.fasta \
-        > vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_mod_len_${chr}.fasta
-    echo "${chr}: $(grep -c '^>' vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_mod_len_${chr}.fasta) sequences"
+    bcftools view -r ${chr} hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf.gz -Oz -o vcf_chm13_chr/hprc-v2.0-mc-chm13_norm_indx_mod_len_${chr}.wave.vcf.gz
+    bcftools index vcf_chm13_chr/hprc-v2.0-mc-chm13_norm_indx_mod_len_${chr}.wave.vcf.gz
+    echo "${chr}: $(bcftools view vcf_chm13_chr/hprc-v2.0-mc-chm13_norm_indx_mod_len_${chr}.wave.vcf.gz | grep -v '^#' | wc -l) variants"
+done
+for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY; do
+    grep "^>${chr}_" vcf2fasta_chm13_norm_indx_mod_len.fasta | sed 's/^>//' | \
+        xargs samtools faidx vcf2fasta_chm13_norm_indx_mod_len.fasta \
+        > vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_indx_mod_len_${chr}.fasta
+    echo "${chr}: $(grep -c '^>' vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_indx_mod_len_${chr}.fasta) sequences"
 done
 ```
 
@@ -84,11 +84,11 @@ for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 
         -pa 8 \
         -gff -a -html \
         -dir ${outdir} \
-        vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_mod_len_${chr}.fasta
+        vcf2fasta_chm13_chr/vcf2fasta_chm13_norm_indx_mod_len_${chr}.fasta
 
     # filter TEs only
     egrep -v "Simple|Satellite|Unknown|Low_complexity|rRNA|snRNA|tRNA" \
-        ${outdir}/vcf2fasta_chm13_norm_mod_len_${chr}.fasta.out \
+        ${outdir}/vcf2fasta_chm13_norm_indx_mod_len_${chr}.fasta.out \
         > ${outdir}/TE_only_${chr}.out
 
     # convert to BED
@@ -98,26 +98,12 @@ for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 
         > ${outdir}/TE_only_${chr}.bed
 
     echo "${chr}: done"
+    
 done
 
 ## merges RepeatMasker TE annotations into VCF INFO fields
 ## run merge_RM_anno_2_vcf_info.R
 ```
 
-## License
-
-
-```python
-import foobar
-
-# returns 'words'
-foobar.pluralize('word')
-
-# returns 'geese'
-foobar.pluralize('goose')
-
-# returns 'phenomenon'
-foobar.singularize('phenomena')
-```
 
 
