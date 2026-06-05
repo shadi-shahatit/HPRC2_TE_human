@@ -10,6 +10,8 @@ Install RepeatMasker, BCFtools, and Samtools.
 
 ## Pre-processing of the vcf file
 
+Normalizes and filters the raw VCF to retain variants with allele lengths between 100–10000 bp, then converts allele sequences in VCF format alleles into per-chromosome FASTA files for RepeatMasker input.
+
 ```bash
 ## install hprc-v2.0-mc-chm13.wave.vcf.gz using https://filesender.renater.fr/?s=download&token=4740558f-6740-476a-8b85-981f56825cdc
 # TE var count = 44 559 977
@@ -72,6 +74,8 @@ done
 
 ## RepeatMasker annotation
 
+Runs RepeatMasker on each chromosome, filters output to transposable elements annotations only, and converts results to BED format to append to original VCF files.
+
 ```bash
 ## run RepeatMasker and parse the output files by chromosome
 for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY; do
@@ -101,9 +105,19 @@ for chr in chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 
     
 done
 
-## merges RepeatMasker TE annotations into VCF INFO fields
-## run merge_RM_anno_2_vcf_info.R
+## merges RepeatMasker TE annotations into VCF INFO fields using merge_RM_anno_2_vcf_info.R
+## merge_RM_anno_2_vcf_info.R: Transfers RepeatMasker TE annotations back into the original VCF as INFO fields, adding REF and ALT allele hits for each variant looping across all chromosomes.
 ```
+## Input
 
+This pipeline can be run on any VCF file, taking each step individually. In this example, we used hprc-v2.0-mc-chm13.wave.vcf.gz from HPRC R2 generated via Minigraph-Cactus.
+
+## Output
+
+The pipeline produces two main outputs per chromosome:
+
+1. A BED file (TE_only_chr*.bed) containing RepeatMasker TE annotations with columns: query, perc_div, begin, end, matching_repeat, and repeat_classfamily
+
+2. An annotated VCF file (hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chr*.vcf) with TE annotations embedded in the INFO field, including: ALT_PERC_DIV, ALT_BEGIN, ALT_END, ALT_MATCHING_REPEAT, ALT_REPEAT_CLASSFAMILY, REF_PERC_DIV, REF_BEGIN, REF_END, REF_MATCHING_REPEAT, and REF_REPEAT_CLASSFAMILY.
 
 
