@@ -109,12 +109,12 @@ done
 ## merge_RM_anno_2_vcf_info.R: Transfers RepeatMasker TE annotations back into the original VCF as INFO fields, adding REF and ALT allele hits for each variant looping across all chromosomes.
 ```
 ## Input
-
-This pipeline can be run on any VCF file, taking each step individually. In this example, we used hprc-v2.0-mc-chm13.wave.vcf.gz from HPRC R2 generated via Minigraph-Cactus.
+ 
+The analysis can be run on VCF files, taking each step individually. In this example, we used hprc-v2.0-mc-chm13.wave.vcf.gz from HPRC R2 generated via Minigraph-Cactus.
 
 ## Output
 
-The pipeline produces two main outputs per chromosome:
+The analysis produces two main outputs per chromosome:
 
 1. A BED file (TE_only_chr*.bed) containing RepeatMasker TE annotations with columns: query, perc_div, begin, end, matching_repeat, and repeat_classfamily
 
