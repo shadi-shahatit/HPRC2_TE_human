@@ -118,6 +118,19 @@ The analysis produces two main outputs per chromosome:
 
 1. A BED file (TE_only_chr*.bed) containing RepeatMasker TE annotations with columns: query, perc_div, begin, end, matching_repeat, and repeat_classfamily
 
-2. An annotated VCF file (hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chr*.vcf) with TE annotations embedded in the INFO field, including: ALT_PERC_DIV, ALT_BEGIN, ALT_END, ALT_MATCHING_REPEAT, ALT_REPEAT_CLASSFAMILY, REF_PERC_DIV, REF_BEGIN, REF_END, REF_MATCHING_REPEAT, and REF_REPEAT_CLASSFAMILY.
+2. An annotated VCF file (hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chr*.vcf) with TE annotations embedded in the INFO field. The following fields are added to the annotated VCF INFO:
+
+| Field | Description |
+|-------|-------------|
+| `ALT_PERC_DIV` | ALT allele RM percent divergence |
+| `ALT_BEGIN` | ALT allele RM begin position in variant |
+| `ALT_END` | ALT allele RM end position in variant |
+| `ALT_MATCHING_REPEAT` | ALT allele RM matching repeat name |
+| `ALT_REPEAT_CLASSFAMILY` | ALT allele RM repeat class/family |
+| `REF_PERC_DIV` | REF allele RM percent divergence |
+| `REF_BEGIN` | REF allele RM begin position |
+| `REF_END` | REF allele RM end position |
+| `REF_MATCHING_REPEAT` | REF allele RM matching repeat name |
+| `REF_REPEAT_CLASSFAMILY` | REF allele RM repeat class/family |
 
 
