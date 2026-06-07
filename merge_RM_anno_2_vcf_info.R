@@ -23,7 +23,7 @@ nrow(id_mapping)
 ## define the header INFO for the new RM in vcf
 
 RM_fields <- DataFrame(
-  Number = rep("1", 10),
+  Number = rep(".", 10),
   Type = rep("String", 10),
   Description = c(
     "ALT RM percent divergence",
