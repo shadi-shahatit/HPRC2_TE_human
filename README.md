@@ -8,13 +8,13 @@ This page describes how to annotate mobile element insertions (MEIs) from VCF fi
 
 Install RepeatMasker, BCFtools, and Samtools.
 
-## Pre-processing of the vcf file
+## Pre-processing of the VCF file
 
-Normalizes and filters the raw VCF to retain variants with allele lengths between 100–10000 bp, then converts allele sequences in VCF format alleles into per-chromosome FASTA files for RepeatMasker input.
+Normalizes and filters the raw VCF to retain variants with allele lengths between 100 - 10000 bp, then converts allele sequences in VCF format into per-chromosome FASTA files for RepeatMasker input.
 
 ```bash
 ## install hprc-v2.0-mc-chm13.wave.vcf.gz using https://filesender.renater.fr/?s=download&token=4740558f-6740-476a-8b85-981f56825cdc
-# TE var count = 44 559 977
+# var count = 44 559 977
 
 ## split multiallelic records
 bcftools norm -m -any hprc-v2.0-mc-chm13.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm.wave.vcf.gz
@@ -23,7 +23,7 @@ bcftools annotate --set-id '%ID\_%ALT' hprc-v2.0-mc-chm13_norm.wave.vcf.gz -Oz -
 ## keep allele with REF or ALT > 100 and < 10 000
 bcftools view -i '(MAX(STRLEN(ALT))>=100 && MAX(STRLEN(ALT))<=10000) | (STRLEN(REF)>=100 && STRLEN(REF)<=10000)' hprc-v2.0-mc-chm13_norm_indx.wave.vcf.gz -Oz -o hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf.gz
 gunzip hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf.gz
-# TE var count = 1 275 518
+# var count = 1 275 518
 
 ## create a fasta file for RepeatMasker from vcf
 sed -e 's/chr//' hprc-v2.0-mc-chm13_norm_indx_mod_len.wave.vcf | awk '!/^#/ {
@@ -107,6 +107,15 @@ done
 
 ## merges RepeatMasker TE annotations into VCF INFO fields using merge_RM_anno_2_vcf_info.R
 ## merge_RM_anno_2_vcf_info.R: Transfers RepeatMasker TE annotations back into the original VCF as INFO fields, adding REF and ALT allele hits for each variant looping across all chromosomes.
+
+## merge the per chr annotated VCF files together 
+bcftools concat \
+    hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chr{1..22}.vcf \
+    hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chrX.vcf \
+    hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chrY.vcf \
+    -Oz -o hprc_v2_mc_chm13_norm_mod_len_annotated_RM_all.vcf.gz
+
+# var count = 198 694 TEs out of 1 275 518 variants
 ```
 ## Input
  
@@ -114,11 +123,11 @@ The analysis can be run on VCF files, taking each step individually. In this exa
 
 ## Output
 
-The analysis produces two main outputs per chromosome:
+The analysis produces two main outputs:
 
-1. A BED file (TE_only_chr*.bed) containing RepeatMasker TE annotations with columns: query, perc_div, begin, end, matching_repeat, and repeat_classfamily
+1. A BED file (TE_only_chr*.bed) containing RepeatMasker TE annotations per chromosome with columns: query, perc_div, begin, end, matching_repeat, and repeat_classfamily
 
-2. An annotated VCF file (hprc_v2_mc_chm13_norm_mod_len_annotated_RM_chr*.vcf) with TE annotations embedded in the INFO field. The following fields are added to the annotated VCF INFO:
+2. An annotated VCF file for all chromosomes (hprc_v2_mc_chm13_norm_mod_len_annotated_RM_all.vcf.gz) with TE annotations embedded in the INFO field. The following fields are added:
 
 | Field | Description |
 |-------|-------------|
